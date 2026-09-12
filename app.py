@@ -20,22 +20,12 @@ st.set_page_config(
 # Cek & Load Model
 @st.cache_resource
 def load_artifacts():
-    model_path = "./saved_models/svm_ga_model.pkl"
-    scaler_path = "./saved_models/scaler.pkl"
-    le_path = "./saved_models/label_encoder.pkl"
-
-    # Jika file belum ada, jalankan training otomatis
-    if not (os.path.exists(model_path) and os.path.exists(scaler_path) and os.path.exists(le_path)):
-        if run_training is not None and os.path.exists("Datashetbijikopi.zip"):
-            with st.spinner("⏳ Menjalankan pelatihan model & optimasi GA pertama kali... (Mohon tunggu)"):
-                run_training()
-        else:
-            return None, None, None
-
-    model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
-    label_encoder = joblib.load(le_path)
+    # Menggunakan nama folder 'save_models' sesuai di repositori GitHub kamu
+    model = joblib.load("./save_models/svm_ga_model.pkl")
+    scaler = joblib.load("./save_models/scaler.pkl")
+    label_encoder = joblib.load("./save_models/label_encoder.pkl")
     return model, scaler, label_encoder
+    
 
 model, scaler, le = load_artifacts()
 artifacts_loaded = model is not None
