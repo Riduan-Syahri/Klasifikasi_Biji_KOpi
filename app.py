@@ -2,7 +2,14 @@ import streamlit as st
 import cv2
 import numpy as np
 import joblib
+import os
 from PIL import Image
+
+# Import fungsi main dari train.py
+try:
+    from train import main as run_training
+except ImportError:
+    run_training = None
 
 st.set_page_config(
     page_title="Deteksi Jenis & Kualitas Biji Kopi",
@@ -10,18 +17,28 @@ st.set_page_config(
     layout="wide"
 )
 
+# Cek & Load Model
 @st.cache_resource
 def load_artifacts():
-    model = joblib.load("./saved_models/svm_ga_model.pkl")
-    scaler = joblib.load("./saved_models/scaler.pkl")
-    label_encoder = joblib.load("./saved_models/label_encoder.pkl")
+    model_path = "./saved_models/svm_ga_model.pkl"
+    scaler_path = "./saved_models/scaler.pkl"
+    le_path = "./saved_models/label_encoder.pkl"
+
+    # Jika file belum ada, jalankan training otomatis
+    if not (os.path.exists(model_path) and os.path.exists(scaler_path) and os.path.exists(le_path)):
+        if run_training is not None and os.path.exists("Datashetbijikopi.zip"):
+            with st.spinner("⏳ Menjalankan pelatihan model & optimasi GA pertama kali... (Mohon tunggu)"):
+                run_training()
+        else:
+            return None, None, None
+
+    model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
+    label_encoder = joblib.load(le_path)
     return model, scaler, label_encoder
 
-try:
-    model, scaler, le = load_artifacts()
-    artifacts_loaded = True
-except Exception as e:
-    artifacts_loaded = False
+model, scaler, le = load_artifacts()
+artifacts_loaded = model is not None
 
 def extract_features_single(img_array, target_size=(128, 128)):
     img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
@@ -46,7 +63,6 @@ def extract_features_single(img_array, target_size=(128, 128)):
     ])
     
     edges = cv2.Canny(gray, 100, 200)
-    
     return features, edges, v_mean[0][0], s_mean[0][0], g_std[0][0]
 
 st.title("☕ Sistem Analisis & Deteksi Biji Kopi")
@@ -54,7 +70,7 @@ st.markdown("Implementasi CRISP-DM: Klasifikasi Biji Kopi Menggunakan **SVM Tero
 st.divider()
 
 if not artifacts_loaded:
-    st.error("⚠️ Model belum dimuat! Jalankan script `train.py` terlebih dahulu untuk menghasilkan folder `saved_models/`.")
+    st.error("⚠️ Model belum dimuat! Upload file `Datashetbijikopi.zip` ke repositori GitHub atau upload folder `saved_models/` berisi file `.pkl`.")
 else:
     col_left, col_right = st.columns([1, 1])
 
